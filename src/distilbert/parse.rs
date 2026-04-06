@@ -138,7 +138,42 @@ impl DistilBert {
                     )?;
                     path.pop();
                 }
-                transformers.push(Transformer { attention, ffn });
+                let attention_norm;
+                {
+                    path.push("sa_layer_norm");
+
+                    path.push("bias");
+                    let bias_view = safe_tensors.tensor(&path.join("."))?;
+                    path.pop();
+
+                    path.push("weight");
+                    let weight_view = safe_tensors.tensor(&path.join("."))?;
+                    path.pop();
+
+                    attention_norm = Norm::try_from_views(bias_view, weight_view, 1e-12)?;
+                    path.pop();
+                }
+                let output_norm;
+                {
+                    path.push("output_layer_norm");
+
+                    path.push("bias");
+                    let bias_view = safe_tensors.tensor(&path.join("."))?;
+                    path.pop();
+
+                    path.push("weight");
+                    let weight_view = safe_tensors.tensor(&path.join("."))?;
+                    path.pop();
+
+                    output_norm = Norm::try_from_views(bias_view, weight_view, 1e-12)?;
+                    path.pop();
+                }
+                transformers.push(Transformer {
+                    attention,
+                    attention_norm,
+                    ffn,
+                    output_norm,
+                });
                 path.pop();
                 layer += 1;
             }

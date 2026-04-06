@@ -17,7 +17,9 @@ pub struct DistilBert {
 
 pub struct Transformer {
     pub attention: Attention,
+    pub attention_norm: Norm,
     pub ffn: Ffn,
+    pub output_norm: Norm,
 }
 
 pub struct Embeddings {

@@ -4,7 +4,7 @@ use {
     super::structs::*,
     crate::{
         Error,
-        layers::{Attention, AttentionViews, Ffn, FfnViews, Matrix, Norm},
+        layers::{Attention, AttentionViews, Ffn, FfnViews, Matrix, Norm, Vector},
     },
 };
 
@@ -177,7 +177,58 @@ impl DistilBert {
                 path.pop();
                 layer += 1;
             }
+            path.pop();
+            path.pop();
         }
+
+        // For some reasons, the naming of the views become inconsistent at this point
+        path.clear();
+        let vocab_layer_norm;
+        {
+            path = vec!["vocab_layer_norm"];
+
+            path.push("bias");
+            let bias_view = safe_tensors.tensor(&path.join("."))?;
+            path.pop();
+
+            path.push("weight");
+            let weight_view = safe_tensors.tensor(&path.join("."))?;
+            path.pop();
+
+            vocab_layer_norm = Norm::try_from_views(bias_view, weight_view, 1e-12)?;
+            path.pop();
+        }
+        let vocab_transform_weight_view = safe_tensors.tensor("vocab_transform.weight")?;
+        let vocab_transform_weight =
+            Matrix::try_from_view(vocab_transform_weight_view, [None, Some(d_model)])?;
+        let d_logit = vocab_transform_weight.shape()[0];
+        let vocab_transform_bias_view = safe_tensors.tensor("vocab_transform.bias")?;
+        let vocab_transform_bias = Vector::try_from_view(vocab_transform_bias_view, Some(d_logit))?;
+
+        let vocab_project_bias_view = safe_tensors.tensor("vocab_projector.bias")?;
+        let vocab_project_bias = Vector::try_from_view(vocab_project_bias_view, Some(vocab_size))?;
+
+        // Even more weird, the vocab projector weights was missing from the safetensors file
+        // I downloaded it from the pytorch model file using Netron.app
+
+        let vocab_project_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../distilbert-base-uncased/vocab_projector_weight.npy");
+        let vocab_project_bytes = std::fs::read(vocab_project_path)?;
+        let header_size =
+            u16::from_le_bytes([vocab_project_bytes[8], vocab_project_bytes[9]]) as usize;
+
+        let vocab_project_weight = Matrix::try_from_bytes(
+            vocab_project_bytes[header_size..(header_size + d_logit * vocab_size * 4)].as_ref(),
+            [d_logit, vocab_size],
+        )?;
+
+        let vocab_layer = VocabLayer {
+            norm: vocab_layer_norm,
+            transform: vocab_transform_weight,
+            transform_bias: vocab_transform_bias,
+            project: vocab_project_weight,
+            project_bias: vocab_project_bias,
+        };
 
         Ok(Self {
             embeddings: embedding,
@@ -185,6 +236,7 @@ impl DistilBert {
             d_model,
             seq_len,
             vocab_size,
+            vocab_layer,
         })
     }
 }

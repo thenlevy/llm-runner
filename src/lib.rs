@@ -5,7 +5,14 @@ mod layers;
 pub enum Error {
     InconsistentShape,
     InvalidData,
+    Io(std::io::Error),
     DeserializationError(safetensors::SafeTensorError),
+}
+
+impl From<std::io::Error> for Error {
+    fn from(error: std::io::Error) -> Self {
+        Error::Io(error)
+    }
 }
 
 impl From<safetensors::SafeTensorError> for Error {
@@ -20,12 +27,12 @@ pub fn add(left: u64, right: u64) -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn it_works() {
-        let bytes = include_bytes!("../../distilbert-base-uncased/model.safetensors");
-        let distilbert = crate::distilbert::DistilBert::try_from_bytes(bytes).unwrap();
+        let model_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../distilbert-base-uncased/model.safetensors");
+        let bytes = std::fs::read(model_path).unwrap();
+        let distilbert = crate::distilbert::DistilBert::try_from_bytes(&bytes).unwrap();
         assert_eq!(distilbert.d_model, 768);
         assert_eq!(distilbert.seq_len, 512);
         assert_eq!(distilbert.vocab_size, 30522);

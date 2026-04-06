@@ -40,6 +40,27 @@ impl Matrix {
         })
     }
 
+    pub fn try_from_bytes(bytes: &[u8], shape: [usize; 2]) -> Result<Self, Error> {
+        if bytes.len() != shape[0] * shape[1] * 4 {
+            eprintln!(
+                "Invalid data length: {} != {}",
+                bytes.len(),
+                shape[0] * shape[1] * 4
+            );
+            return Err(Error::InvalidData);
+        }
+
+        Ok(Self {
+            inner: DMatrix::from_iterator(
+                shape[0],
+                shape[1],
+                bytes
+                    .chunks_exact(4)
+                    .map(|chunk| f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]])),
+            ),
+        })
+    }
+
     pub fn shape(&self) -> [usize; 2] {
         [self.inner.nrows(), self.inner.ncols()]
     }

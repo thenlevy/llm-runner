@@ -2,7 +2,7 @@
 
 use crate::{
     Error,
-    layers::{Attention, Ffn, Matrix, Norm},
+    layers::{Attention, Ffn, Matrix, Norm, Vector},
 };
 
 use {nalgebra::DMatrix, safetensors::tensor::TensorView};
@@ -10,6 +10,7 @@ use {nalgebra::DMatrix, safetensors::tensor::TensorView};
 pub struct DistilBert {
     pub embeddings: Embeddings,
     pub transformers: Vec<Transformer>,
+    pub vocab_layer: VocabLayer,
     pub d_model: usize,
     pub seq_len: usize,
     pub vocab_size: usize,
@@ -26,4 +27,12 @@ pub struct Embeddings {
     pub norm: Norm,
     pub positions: Matrix,
     pub words: Matrix,
+}
+
+pub struct VocabLayer {
+    pub norm: Norm,
+    pub transform: Matrix,
+    pub transform_bias: Vector,
+    pub project: Matrix,
+    pub project_bias: Vector,
 }

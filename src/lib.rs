@@ -29,5 +29,6 @@ mod tests {
         assert_eq!(distilbert.d_model, 768);
         assert_eq!(distilbert.seq_len, 512);
         assert_eq!(distilbert.vocab_size, 30522);
+        assert_eq!(distilbert.transformers.len(), 6);
     }
 }

@@ -1,10 +1,10 @@
-use crate::Error;
+use crate::{Error, layers::Vector};
 
-use {nalgebra::DVector, safetensors::tensor::TensorView};
+use safetensors::tensor::TensorView;
 
 pub struct Norm {
-    bias: DVector<f32>,
-    weight: DVector<f32>,
+    bias: Vector,
+    weight: Vector,
     espilon: f32,
 }
 
@@ -14,36 +14,13 @@ impl Norm {
         weights: TensorView<'_>,
         espilon: f32,
     ) -> Result<Self, Error> {
-        let ([bias_dim], [weights_dim]) = (bias.shape(), weights.shape()) else {
-            return Err(Error::InconsistentShape);
-        };
-
-        if bias_dim != weights_dim {
-            return Err(Error::InconsistentShape);
-        }
-
-        if bias.data().len() != bias_dim * 4 {
-            return Err(Error::InvalidData);
-        }
-
-        if weights.data().len() != weights_dim * 4 {
-            return Err(Error::InvalidData);
-        }
+        let bias = Vector::try_from_view(bias, None)?;
+        let len = bias.len();
+        let weight = Vector::try_from_view(weights, Some(len))?;
 
         Ok(Self {
-            bias: DVector::from_iterator(
-                *bias_dim,
-                bias.data()
-                    .chunks_exact(4)
-                    .map(|chunk| f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]])),
-            ),
-            weight: DVector::from_iterator(
-                *weights_dim,
-                weights
-                    .data()
-                    .chunks_exact(4)
-                    .map(|chunk| f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]])),
-            ),
+            bias,
+            weight,
             espilon,
         })
     }

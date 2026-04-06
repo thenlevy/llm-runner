@@ -2,16 +2,22 @@
 
 use crate::{
     Error,
-    layers::{Matrix, Norm},
+    layers::{Attention, Ffn, Matrix, Norm},
 };
 
 use {nalgebra::DMatrix, safetensors::tensor::TensorView};
 
 pub struct DistilBert {
     pub embeddings: Embeddings,
+    pub transformers: Vec<Transformer>,
     pub d_model: usize,
     pub seq_len: usize,
     pub vocab_size: usize,
+}
+
+pub struct Transformer {
+    pub attention: Attention,
+    pub ffn: Ffn,
 }
 
 pub struct Embeddings {

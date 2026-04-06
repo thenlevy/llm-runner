@@ -1,6 +1,8 @@
 [package]
-name = "llm-runner"
-version = "0.1.0"
-edition = "2024"
+	edition = "2024"
+	name = "llm-runner"
+	version = "0.1.0"
 
 [dependencies]
+	nalgebra = "0.34"
+	safetensors = "0.7.0"

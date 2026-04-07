@@ -30,7 +30,7 @@ impl Matrix {
         }
 
         Ok(Self {
-            inner: DMatrix::from_iterator(
+            inner: DMatrix::from_row_iterator(
                 *rows,
                 *cols,
                 view.data()
@@ -51,7 +51,7 @@ impl Matrix {
         }
 
         Ok(Self {
-            inner: DMatrix::from_iterator(
+            inner: DMatrix::from_row_iterator(
                 shape[0],
                 shape[1],
                 bytes

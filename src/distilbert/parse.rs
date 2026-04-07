@@ -217,8 +217,10 @@ impl DistilBert {
         let header_size =
             u16::from_le_bytes([vocab_project_bytes[8], vocab_project_bytes[9]]) as usize;
 
+        let header_end = 10 + header_size;
+
         let vocab_project_weight = Matrix::try_from_bytes(
-            vocab_project_bytes[header_size..(header_size + d_logit * vocab_size * 4)].as_ref(),
+            vocab_project_bytes[header_end..(header_end + d_logit * vocab_size * 4)].as_ref(),
             [d_logit, vocab_size],
         )?;
 

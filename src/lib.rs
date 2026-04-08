@@ -1,6 +1,8 @@
 mod distilbert;
 mod layers;
 
+pub use distilbert::DistilBert;
+
 #[derive(Debug)]
 pub enum Error {
     InconsistentShape,
@@ -20,15 +22,10 @@ impl From<safetensors::SafeTensorError> for Error {
         Error::DeserializationError(error)
     }
 }
-
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
-
 #[cfg(test)]
 mod tests {
     #[test]
-    fn it_works() {
+    fn parse_distilbert() {
         let model_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../distilbert-base-uncased/model.safetensors");
         let bytes = std::fs::read(model_path).unwrap();
@@ -36,6 +33,6 @@ mod tests {
         assert_eq!(distilbert.d_model, 768);
         assert_eq!(distilbert.seq_len, 512);
         assert_eq!(distilbert.vocab_size, 30522);
-        assert_eq!(distilbert.transformers.len(), 6);
+        assert_eq!(distilbert.encoder.len(), 6);
     }
 }

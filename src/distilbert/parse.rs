@@ -4,7 +4,7 @@ use {
     super::structs::*,
     crate::{
         Error,
-        layers::{Attention, AttentionViews, Ffn, FfnViews, Matrix, Norm, Vector},
+        layers::{Attention, AttentionViews, Embeddings, Ffn, FfnViews, Matrix, Norm, Vector},
     },
 };
 
@@ -95,6 +95,14 @@ impl DistilBert {
                     let v_bias_view = safe_tensors.tensor(&path.join("."))?;
                     path.pop();
 
+                    path.push("out_lin.weight");
+                    let out_weights_view = safe_tensors.tensor(&path.join("."))?;
+                    path.pop();
+
+                    path.push("out_lin.bias");
+                    let out_bias_view = safe_tensors.tensor(&path.join("."))?;
+                    path.pop();
+
                     attention = Attention::try_from_views(
                         AttentionViews {
                             q_weights: q_weights_view,
@@ -103,6 +111,8 @@ impl DistilBert {
                             k_bias: k_bias_view,
                             v_weights: v_weights_view,
                             v_bias: v_bias_view,
+                            out_weights: out_weights_view,
+                            out_bias: out_bias_view,
                         },
                         d_model,
                     )?;
@@ -168,7 +178,7 @@ impl DistilBert {
                     output_norm = Norm::try_from_views(bias_view, weight_view, 1e-12)?;
                     path.pop();
                 }
-                transformers.push(Transformer {
+                transformers.push(Stack {
                     attention,
                     attention_norm,
                     ffn,
@@ -219,9 +229,10 @@ impl DistilBert {
 
         let header_end = 10 + header_size;
 
+        // PyTorch `Linear(d_logit, vocab_size)` weight is `(vocab_size, d_logit)` row-major.
         let vocab_project_weight = Matrix::try_from_bytes(
             vocab_project_bytes[header_end..(header_end + d_logit * vocab_size * 4)].as_ref(),
-            [d_logit, vocab_size],
+            [vocab_size, d_logit],
         )?;
 
         let vocab_layer = VocabLayer {
@@ -234,11 +245,13 @@ impl DistilBert {
 
         Ok(Self {
             embeddings: embedding,
-            transformers,
+            encoder: transformers,
             d_model,
             seq_len,
             vocab_size,
             vocab_layer,
+            // `distilbert-base-uncased` config; other checkpoints may differ.
+            n_heads: 12,
         })
     }
 }

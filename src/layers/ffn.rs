@@ -2,10 +2,10 @@
 
 use crate::{
     Error,
-    layers::{Matrix, Vector},
+    layers::{Matrix, Vector, add_bias_rows, apply_gelu},
 };
 
-use safetensors::tensor::TensorView;
+use {nalgebra::DMatrix, safetensors::tensor::TensorView};
 
 pub struct Ffn {
     pub linear_1: Matrix,
@@ -32,5 +32,21 @@ impl Ffn {
             bias_1: Vector::try_from_view(views.bias_1, hidden_dimension)?,
             bias_2: Vector::try_from_view(views.bias_2, Some(d_model))?,
         })
+    }
+
+    pub fn forward(&self, x: DMatrix<f32>) -> Result<DMatrix<f32>, Error> {
+        let (_, n_cols) = x.shape();
+        if n_cols != self.linear_1.shape()[1] {
+            return Err(Error::InconsistentShape);
+        }
+
+        let mut y = x * self.linear_1.transpose();
+        add_bias_rows(&mut y, &self.bias_1);
+        apply_gelu(&mut y);
+
+        let mut z = y * self.linear_2.transpose();
+        add_bias_rows(&mut z, &self.bias_2);
+
+        Ok(z)
     }
 }

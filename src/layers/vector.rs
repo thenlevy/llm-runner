@@ -2,10 +2,28 @@
 
 use crate::Error;
 
-use {nalgebra::DVector, safetensors::tensor::TensorView};
+use {
+    nalgebra::DVector,
+    safetensors::tensor::TensorView,
+    std::ops::{Deref, DerefMut},
+};
 
 pub struct Vector {
     inner: DVector<f32>,
+}
+
+impl Deref for Vector {
+    type Target = DVector<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl DerefMut for Vector {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
 }
 
 impl Vector {

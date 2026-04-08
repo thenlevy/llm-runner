@@ -2,10 +2,28 @@
 
 use crate::Error;
 
-use {nalgebra::DMatrix, safetensors::tensor::TensorView};
+use {
+    nalgebra::DMatrix,
+    safetensors::tensor::TensorView,
+    std::ops::{Deref, DerefMut},
+};
 
 pub struct Matrix {
     inner: DMatrix<f32>,
+}
+
+impl Deref for Matrix {
+    type Target = DMatrix<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl DerefMut for Matrix {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
 }
 
 impl Matrix {

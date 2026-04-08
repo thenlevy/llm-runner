@@ -15,7 +15,7 @@ impl Norm {
     pub fn try_from_views(
         bias: TensorView<'_>,
         weights: TensorView<'_>,
-        espilon: f32,
+        epsilon: f32,
     ) -> Result<Self, Error> {
         let bias = Vector::try_from_view(bias, None)?;
         let len = bias.len();
@@ -24,7 +24,7 @@ impl Norm {
         Ok(Self {
             bias,
             weight,
-            epsilon: espilon,
+            epsilon,
         })
     }
 

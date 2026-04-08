@@ -17,8 +17,9 @@ impl DistilBert {
         let mut path = vec!["distilbert"];
         let seq_len;
         let d_model;
-        //let hidden_size;
         let vocab_size;
+
+        let epsilon = 1e-12;
 
         let embedding;
         {
@@ -32,7 +33,7 @@ impl DistilBert {
                 path.push("weight");
                 let weight_view = safe_tensors.tensor(&path.join("."))?;
                 path.pop();
-                norm = Norm::try_from_views(bias_view, weight_view, 1e-12)?;
+                norm = Norm::try_from_views(bias_view, weight_view, epsilon)?;
                 d_model = norm.shape();
                 path.pop();
             }
@@ -160,7 +161,7 @@ impl DistilBert {
                     let weight_view = safe_tensors.tensor(&path.join("."))?;
                     path.pop();
 
-                    attention_norm = Norm::try_from_views(bias_view, weight_view, 1e-12)?;
+                    attention_norm = Norm::try_from_views(bias_view, weight_view, epsilon)?;
                     path.pop();
                 }
                 let output_norm;
@@ -175,7 +176,7 @@ impl DistilBert {
                     let weight_view = safe_tensors.tensor(&path.join("."))?;
                     path.pop();
 
-                    output_norm = Norm::try_from_views(bias_view, weight_view, 1e-12)?;
+                    output_norm = Norm::try_from_views(bias_view, weight_view, epsilon)?;
                     path.pop();
                 }
                 transformers.push(Stack {
@@ -205,7 +206,7 @@ impl DistilBert {
             let weight_view = safe_tensors.tensor(&path.join("."))?;
             path.pop();
 
-            vocab_layer_norm = Norm::try_from_views(bias_view, weight_view, 1e-12)?;
+            vocab_layer_norm = Norm::try_from_views(bias_view, weight_view, epsilon)?;
             path.pop();
         }
         let vocab_transform_weight_view = safe_tensors.tensor("vocab_transform.weight")?;
@@ -229,7 +230,6 @@ impl DistilBert {
 
         let header_end = 10 + header_size;
 
-        // PyTorch `Linear(d_logit, vocab_size)` weight is `(vocab_size, d_logit)` row-major.
         let vocab_project_weight = Matrix::try_from_bytes(
             vocab_project_bytes[header_end..(header_end + d_logit * vocab_size * 4)].as_ref(),
             [vocab_size, d_logit],
@@ -250,7 +250,6 @@ impl DistilBert {
             seq_len,
             vocab_size,
             vocab_layer,
-            // `distilbert-base-uncased` config; other checkpoints may differ.
             n_heads: 12,
         })
     }

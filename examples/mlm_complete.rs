@@ -28,7 +28,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .token_to_id("[MASK]")
         .ok_or("tokenizer has no [MASK] token")? as u32;
 
-    // Single-sequence BERT/DistilBERT convention: [CLS] … [SEP]
+    // Here, the tokenizer will add the special tokens `[CLS]` and `[SEP]` at the beginning and end
+    // of the text. These tokens indicates the begining and end of the sequence to process to the
+    // DistilBERT model.
     let encoding = tokenizer
         .encode(text.as_str(), true)
         .map_err(|e| e.to_string())?;

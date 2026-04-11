@@ -1,4 +1,5 @@
 mod distilbert;
+mod gpt;
 mod layers;
 
 pub use distilbert::DistilBert;

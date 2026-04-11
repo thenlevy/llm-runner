@@ -56,4 +56,19 @@ impl Vector {
     pub fn len(&self) -> usize {
         self.inner.len()
     }
+
+    pub fn try_from_f32_le_bytes(bytes: &[u8], expected_length: usize) -> Result<Self, Error> {
+        if bytes.len() % 4 != 0 {
+            return Err(Error::InvalidData);
+        }
+
+        Ok(Self {
+            inner: DVector::from_iterator(
+                expected_length,
+                bytes
+                    .chunks_exact(4)
+                    .map(|chunk| f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]])),
+            ),
+        })
+    }
 }

@@ -14,6 +14,9 @@ pub use {
     vector::Vector,
 };
 
+#[allow(unused_imports)]
+pub use attention::FusedAttentionViews;
+
 use nalgebra::{DMatrix, DVector};
 
 pub(crate) fn linear(x: &DMatrix<f32>, w: &Matrix, b: &Vector) -> DMatrix<f32> {

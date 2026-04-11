@@ -29,7 +29,64 @@ pub struct AttentionViews<'a> {
     pub out_bias: TensorView<'a>,
 }
 
+pub struct FusedAttentionViews<'a> {
+    pub c_attn_weight: TensorView<'a>,
+    pub c_attn_bias: TensorView<'a>,
+    pub c_proj_weight: TensorView<'a>,
+    pub c_proj_bias: TensorView<'a>,
+}
+
 impl Attention {
+    pub fn try_from_fused_views(
+        views: FusedAttentionViews<'_>,
+        d_model: usize,
+    ) -> Result<Self, Error> {
+        let fused = Matrix::try_from_view(views.c_attn_weight, [Some(d_model), Some(3 * d_model)])?;
+
+        let bias_bytes = views.c_attn_bias.data();
+        if bias_bytes.len() != 3 * d_model * 4 {
+            return Err(Error::InvalidData);
+        }
+
+        // The weights W_q, W_k, W_v are stored in a single W_fused matix so that
+        // [K, V, Q] = x @ W_fused.
+        // Then, in GPT-2 implementation the attention scores are computed "Conv1D-style":
+        // y = x @ W + b.
+        // Since in our implementation we use a PyTorch-style linear layer
+        //(y = x * Wᵀ + b), we need to transpose the weights here for consistency.
+        let q_weights = {
+            let block = fused.view((0, 0), (d_model, d_model));
+            Matrix::from_dmatrix(block.transpose())
+        };
+        let k_weights = {
+            let block = fused.view((0, d_model), (d_model, d_model));
+            Matrix::from_dmatrix(block.transpose())
+        };
+        let v_weights = {
+            let block = fused.view((0, 2 * d_model), (d_model, d_model));
+            Matrix::from_dmatrix(block.transpose())
+        };
+
+        let q_bias = Vector::try_from_f32_le_bytes(&bias_bytes[0..d_model * 4], d_model)?;
+        let k_bias =
+            Vector::try_from_f32_le_bytes(&bias_bytes[d_model * 4..2 * d_model * 4], d_model)?;
+        let v_bias =
+            Vector::try_from_f32_le_bytes(&bias_bytes[2 * d_model * 4..3 * d_model * 4], d_model)?;
+
+        let c_proj = Matrix::try_from_view(views.c_proj_weight, [Some(d_model), Some(d_model)])?;
+
+        Ok(Self {
+            q_weights,
+            k_weights,
+            v_weights,
+            q_bias,
+            k_bias,
+            v_bias,
+            out_weights: c_proj.transposed(),
+            out_bias: Vector::try_from_view(views.c_proj_bias, Some(d_model))?,
+        })
+    }
+
     pub fn try_from_views(views: AttentionViews, d_model: usize) -> Result<Self, Error> {
         Ok(Self {
             q_bias: Vector::try_from_view(views.q_bias, Some(d_model))?,

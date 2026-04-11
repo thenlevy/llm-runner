@@ -34,6 +34,22 @@ impl Ffn {
         })
     }
 
+    pub fn try_from_transposed_views(views: FfnViews, d_model: usize) -> Result<Self, Error> {
+        let linear_1_raw = Matrix::try_from_view(views.linear_1, [Some(d_model), None])?;
+        let hidden = linear_1_raw.shape()[1];
+        let linear_1 = linear_1_raw.transposed();
+
+        let linear_2_raw = Matrix::try_from_view(views.linear_2, [Some(hidden), Some(d_model)])?;
+        let linear_2 = linear_2_raw.transposed();
+
+        Ok(Self {
+            linear_1,
+            linear_2,
+            bias_1: Vector::try_from_view(views.bias_1, Some(hidden))?,
+            bias_2: Vector::try_from_view(views.bias_2, Some(d_model))?,
+        })
+    }
+
     pub fn forward(&self, x: DMatrix<f32>) -> Result<DMatrix<f32>, Error> {
         let (_, n_cols) = x.shape();
         if n_cols != self.linear_1.shape()[1] {

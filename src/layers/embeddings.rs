@@ -8,7 +8,7 @@ use crate::{
 use nalgebra::DMatrix;
 
 pub struct Embeddings {
-    pub norm: Norm,
+    pub norm: Option<Norm>,
     pub positions: Matrix,
     pub words: Matrix,
 }
@@ -30,7 +30,9 @@ impl Embeddings {
                 .copy_from(&(self.words.row(t_id) + self.positions.row(i)));
         }
 
-        self.norm.normalize_rows(&mut embeddings)?;
+        if let Some(norm) = &self.norm {
+            norm.normalize_rows(&mut embeddings)?;
+        }
 
         Ok(embeddings)
     }

@@ -82,4 +82,14 @@ impl Matrix {
     pub fn shape(&self) -> [usize; 2] {
         [self.inner.nrows(), self.inner.ncols()]
     }
+
+    pub(crate) fn from_dmatrix(inner: DMatrix<f32>) -> Self {
+        Self { inner }
+    }
+
+    pub fn transposed(&self) -> Self {
+        Self {
+            inner: self.inner.transpose(),
+        }
+    }
 }

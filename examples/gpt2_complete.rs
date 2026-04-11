@@ -88,13 +88,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn rng_from_env() -> StdRng {
+    use rand::RngCore;
     match std::env::var("SEED").map(|s| s.parse().ok()) {
         Ok(Some(s)) => StdRng::seed_from_u64(s),
         Ok(None) => {
             eprintln!("provided SEED is not a valid u64, using entropy");
-            StdRng::from_entropy()
+            let mut rng = StdRng::from_entropy();
+            let seed = rng.next_u64();
+            println!("seed: {seed}");
+            StdRng::seed_from_u64(seed)
         }
-        Err(_) => StdRng::from_entropy(),
+        Err(_) => {
+            let mut rng = StdRng::from_entropy();
+            let seed = rng.next_u64();
+            println!("seed: {seed}");
+            StdRng::seed_from_u64(seed)
+        }
     }
 }
 

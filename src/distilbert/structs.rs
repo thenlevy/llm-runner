@@ -38,7 +38,7 @@ impl DistilBert {
         for stack in &self.encoder {
             // TransformerBlock: sa_layer_norm(attn(x) + x), then output_layer_norm(ffn(h) + h)
             let residual = output.clone();
-            let attn_out = stack.attention.forward_multi_headed(output, self.n_heads)?;
+            let attn_out = stack.attention.forward_multi_head(output, self.n_heads)?;
             let mut h = attn_out + residual;
             stack.attention_norm.normalize_rows(&mut h)?;
 

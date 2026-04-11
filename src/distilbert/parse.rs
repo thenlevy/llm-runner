@@ -53,7 +53,7 @@ impl DistilBert {
 
             path.pop();
             embedding = Embeddings {
-                norm,
+                norm: Some(norm),
                 positions,
                 words,
             };

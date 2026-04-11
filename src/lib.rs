@@ -1,7 +1,8 @@
 mod distilbert;
+mod gpt;
 mod layers;
 
-pub use distilbert::DistilBert;
+pub use {distilbert::DistilBert, gpt::Gpt2};
 
 #[derive(Debug)]
 pub enum Error {
@@ -25,6 +26,7 @@ impl From<safetensors::SafeTensorError> for Error {
 #[cfg(test)]
 mod tests {
     #[test]
+    #[ignore = "requires ../distilbert-base-uncased/model.safetensors"]
     fn parse_distilbert() {
         let model_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../distilbert-base-uncased/model.safetensors");
@@ -34,5 +36,20 @@ mod tests {
         assert_eq!(distilbert.seq_len, 512);
         assert_eq!(distilbert.vocab_size, 30522);
         assert_eq!(distilbert.encoder.len(), 6);
+    }
+
+    #[test]
+    #[ignore = "requires ../gpt2-medium/model.safetensors"]
+    fn parse_gpt2_medium() {
+        let model_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../gpt2-medium/model.safetensors");
+        let bytes = std::fs::read(&model_path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", model_path.display()));
+        let gpt2 = crate::Gpt2::try_from_bytes(&bytes).unwrap();
+        assert_eq!(gpt2.d_model, 1024);
+        assert_eq!(gpt2.seq_len, 1024);
+        assert_eq!(gpt2.vocab_size, 50257);
+        assert_eq!(gpt2.n_heads, 16);
+        assert_eq!(gpt2.blocks.len(), 24);
     }
 }

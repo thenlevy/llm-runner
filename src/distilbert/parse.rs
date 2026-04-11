@@ -219,21 +219,12 @@ impl DistilBert {
         let vocab_project_bias_view = safe_tensors.tensor("vocab_projector.bias")?;
         let vocab_project_bias = Vector::try_from_view(vocab_project_bias_view, Some(vocab_size))?;
 
-        // Even more weird, the vocab projector weights was missing from the safetensors file
-        // I downloaded it from the pytorch model file using Netron.app
-
-        let vocab_project_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../distilbert-base-uncased/vocab_projector_weight.npy");
-        let vocab_project_bytes = std::fs::read(vocab_project_path)?;
-        let header_size =
-            u16::from_le_bytes([vocab_project_bytes[8], vocab_project_bytes[9]]) as usize;
-
-        let header_end = 10 + header_size;
-
-        let vocab_project_weight = Matrix::try_from_bytes(
-            vocab_project_bytes[header_end..(header_end + d_logit * vocab_size * 4)].as_ref(),
-            [vocab_size, d_logit],
-        )?;
+        // HF ties `vocab_projector.weight` to `word_embeddings.weight`; many safetensors exports
+        // omit the duplicate tensor, so use the same matrix as the embedding lookup table.
+        if d_logit != d_model {
+            return Err(Error::InconsistentShape);
+        }
+        let vocab_project_weight = embedding.words.clone();
 
         let vocab_layer = VocabLayer {
             norm: vocab_layer_norm,

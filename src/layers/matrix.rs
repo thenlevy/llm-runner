@@ -8,6 +8,7 @@ use {
     std::ops::{Deref, DerefMut},
 };
 
+#[derive(Clone)]
 pub struct Matrix {
     inner: DMatrix<f32>,
 }
